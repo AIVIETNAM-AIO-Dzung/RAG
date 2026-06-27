@@ -8,7 +8,7 @@ import tempfile, os, time
 def chunk_text(text:str, size:int=1000, overlap:int=200)->list:
     """Cắt text thành cấc đoạn nhỏ có độ dài tối đa 'size' ký tự, với 
     'overlap ký từ trùng lặp giữa 2 đoạn liên tiếp."""
-    if text
+    if text:
         paras = [p.strip() for p in text.split("\n") if p.strip()]
         chunks, cur = [], ""
         for p in paras:

@@ -32,7 +32,7 @@ with st.sidebar:
             st.session_state.pdf_name = f.name
             st.session_state.chat_history = []
         st.success(f"✅ {n} chunks")
-    st.info(f"📄{st.session_state.pdf_name}" if st.session_state.pdf_nane else "📄 Chưa có tài liệu")
+    st.info(f"📄{st.session_state.pdf_name}" if st.session_state.pdf_name else "📄 Chưa có tài liệu")
     if st.button("🗑️ Xóa lịch sử chat", use_container_width=True):
         st.session_state.chat_history=[]
     
