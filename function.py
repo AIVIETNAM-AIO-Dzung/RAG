@@ -63,7 +63,7 @@ def rag(question:str, prompt:str, llm_model:str, collection, k:int=4):
 
 
 # Đọc file PFF
-def process_pdf(uploaded_file):
+def process_pdf(uploaded_file,embed_model):
     with tempfile.NamedTemporaryFile(delete=False, suffix="pdf") as tmp:
         tmp.write(uploaded_file.getvalue())
         path = tmp.name
@@ -77,7 +77,7 @@ def process_pdf(uploaded_file):
         collection = client.get_or_create_collection("rag")
         collection.add(ids=[f"{str(i)}_{int(time.time())}" for i in range(len(chunks))],
                     documents=chunks,
-                    embeddings=embed(chunks)
+                    embeddings=embed(chunks,embed_model)
                     )
         
         return collection, len(chunks)

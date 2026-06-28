@@ -1,10 +1,10 @@
-import function as f
+import function as fu
 import streamlit as st
 
 
 
 LLM_MODEL = "vicuna:7b-v1.5-q5_1"
-EMBED_MODEL = "bge-m3"
+EMBED_MODEL = "qwen3-embedding:latest"
 PROMPT = """
                 Bạn là trợ lý hỏi đáp. Dùng các đoạn ngữ cảnh dưới đây để trả lời câu hỏi.
                 Nếu ngữ cảnh không có thông tin, hãy nói là bạn không biết, đừng bịa.
@@ -28,7 +28,7 @@ with st.sidebar:
     f = st.file_uploader("Choose",type ="pdf")
     if f and st.button("🔄 Xử lý PDF",use_container_width=True):
         with st.spinner("Processing..."):
-            st.session_state.collection, n =  f.process_pdf(f)
+            st.session_state.collection, n =  fu.process_pdf(f,EMBED_MODEL)
             st.session_state.pdf_name = f.name
             st.session_state.chat_history = []
         st.success(f"✅ {n} chunks")
@@ -51,7 +51,7 @@ else:
             st.write(q)
         with st.chat_message("assistant"):
             with st.spinner("Thinking..."):
-                ans = f.rag(q,PROMPT,LLM_MODEL,st.session_state.collection,4)
+                ans = fu.rag(q,PROMPT,LLM_MODEL,st.session_state.collection,4)
                 st.write(ans)
             st.session_state.chat_history.append({"role":"assistant", "content": ans})
 
