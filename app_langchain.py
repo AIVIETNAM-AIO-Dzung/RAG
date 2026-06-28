@@ -1,27 +1,36 @@
-import function as fu
+import langchain_function as lf
 import streamlit as st
 
 
 
 LLM_MODEL = "vicuna:7b-v1.5-q5_1"
 EMBED_MODEL = "qwen3-embedding:latest"
-PROMPT = """
-                Bạn là trợ lý hỏi đáp. Dùng các đoạn ngữ cảnh dưới đây để trả lời câu hỏi.
-                Nếu ngữ cảnh không có thông tin, hãy nói là bạn không biết, đừng bịa.
-                Trả lời ngắn gọn, chính xác, bằng tiếng Việt.
 
-                Ngữ cảnh:{context}
-                
-                Câu hỏi: {question}
 
-                Trả lời:
-            """
+# initiate variable for session state
+if "rag_chain" not in st.session_state:
+    st.session_state.rag_chain = None
+if "models_loaded" not in st.session_state:
+    st.session_state.models_loaded = False
+if "embeddings" not in st.session_state:
+    st.session_state.embeddings = None
+if "llm" not in st.session_state:
+    st.session_state.llm = None
 
 for k,v in {"collection":None, "pdf_name":"", "chat_history":[]}.items():
     st.session_state.setdefault(k,v)
 
 st.set_page_config(page_title="PDF RAG Chatbot", layout="wide",initial_sidebar_state="expanded")
 st.title("PDF RAG Assistant")
+
+if not st.session_state.models_loaded:
+    st.info("Model loading...")
+    st.session_state.embeddings = lf.load_embeddings(EMBED_MODEL)
+    st.session_state.llm = lf.initiate_llm_pipeline(LLM_MODEL)
+    st.session_state.models_loaded = True
+    st.success("Model is ready!")
+    st.rerun()
+    
 
 with st.sidebar:
     st.subheader("📄Upload document")
