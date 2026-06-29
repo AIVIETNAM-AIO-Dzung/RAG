@@ -1,48 +1,37 @@
-import langchain_function as lf
+import ollama_function as fu
 import streamlit as st
 
 
 
 LLM_MODEL = "vicuna:7b-v1.5-q5_1"
-EMBED_MODEL = "qwen3-embedding:latest"
+EMBED_MODEL = "sentence-transformers/qwen3-embedding:latest"
+PROMPT = """
+                Bạn là trợ lý hỏi đáp. Dùng các đoạn ngữ cảnh dưới đây để trả lời câu hỏi.
+                Nếu ngữ cảnh không có thông tin, hãy nói là bạn không biết, đừng bịa.
+                Trả lời ngắn gọn, chính xác, bằng tiếng Việt.
 
+                Ngữ cảnh:{context}
+                
+                Câu hỏi: {question}
 
-# initiate variable for session state
-if "rag_chain" not in st.session_state:
-    st.session_state.rag_chain = None
-if "models_loaded" not in st.session_state:
-    st.session_state.models_loaded = False
-if "embeddings" not in st.session_state:
-    st.session_state.embeddings = None
-if "llm" not in st.session_state:
-    st.session_state.llm = None
-if "pdf_name" not in st.session_state:
-    st.session_state.pdf_name = ""
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = [] 
+                Trả lời:
+            """
 
+for k,v in {"collection":None, "pdf_name":"", "chat_history":[]}.items():
+    st.session_state.setdefault(k,v)
 
 st.set_page_config(page_title="PDF RAG Chatbot", layout="wide",initial_sidebar_state="expanded")
 st.title("PDF RAG Assistant")
-
-if not st.session_state.models_loaded:
-    st.info("Model loading...")
-    st.session_state.embeddings = lf.load_embeddings(EMBED_MODEL)
-    st.session_state.llm = lf.initiate_llm_pipeline(LLM_MODEL)
-    st.session_state.models_loaded = True
-    st.success("Model is ready!")
-    st.rerun()
-    
 
 with st.sidebar:
     st.subheader("📄Upload document")
     f = st.file_uploader("Choose",type ="pdf")
     if f and st.button("🔄 Xử lý PDF",use_container_width=True):
         with st.spinner("Processing..."):
-            st.session_state.rag_chain,num_chunks =  lf.process_pdf(EMBED_MODEL,LLM_MODEL,f)  
+            st.session_state.collection, n =  fu.process_pdf(f,EMBED_MODEL)
             st.session_state.pdf_name = f.name
-            st.session_state.chat_history = []          
-        st.success(f"✅ {num_chunks} chunks")
+            st.session_state.chat_history = []
+        st.success(f"✅ {n} chunks")
     st.info(f"📄{st.session_state.pdf_name}" if st.session_state.pdf_name else "📄 Chưa có tài liệu")
     if st.button("🗑️ Xóa lịch sử chat", use_container_width=True):
         st.session_state.chat_history=[]
@@ -51,7 +40,7 @@ for m in st.session_state.chat_history:
     with st.chat_message(m["role"]):
         st.write(m["content"])
 
-if st.session_state.rag_chain is None:
+if st.session_state.collection is None:
     st.info("🔄 Upload và xử lý PDF trước khi chat.")
     st.chat_input("Input ypur question...",disabled=True)
 else:
@@ -62,8 +51,7 @@ else:
             st.write(q)
         with st.chat_message("assistant"):
             with st.spinner("Thinking..."):
-                output = st.session_state.rag_chain.invoke(q)
-                ans = output.split("Answer:")[1].strip() if "Answer:" in output else output.strip()
+                ans = fu.rag(q,PROMPT,LLM_MODEL,st.session_state.collection,4)
                 st.write(ans)
             st.session_state.chat_history.append({"role":"assistant", "content": ans})
 

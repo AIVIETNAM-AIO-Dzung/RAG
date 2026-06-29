@@ -1,26 +1,27 @@
 import torch
 from transformers import BitsAndBytesConfig
-from transformers import AutoTokenizer, AutoModelForCausalLM, pipelines
-from langchain_huggingface import HuggingFaceEmbeddings
+from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
+from langchain_ollama import OllamaEmbeddings, OllamaLLM
 from langchain_huggingface.llms import HuggingFacePipeline
-from langchain.memory import ConversationBufferMemory
-from langchain_community.chat_message_histories import ChatMessageHistory
-from langchain_community.document_loaders import PyPDFLoader, TextLoader
-from langchain.chains import ConversationalRetrievalChain
+from langchain_community.document_loaders import PyPDFLoader
 from langchain_experimental.text_splitter import SemanticChunker
 from langchain_chroma import Chroma
-from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.runnables import RunnablePassthrough
 from langchain_core.output_parsers import StrOutputParser
 from langchain import hub
 import streamlit as st
 import tempfile 
+import os
 
 
 
-def text_splitter(documents:str,embed_model:str):
-    embed_model = HuggingFaceEmbeddings(model_name=embed_model)
-    semantic_splitter = SemanticChunker(embeddings=embed_model,
+@st.cache_resource
+def load_embeddings(embed_model:str):
+    return OllamaEmbeddings(model=embed_model)
+    
+def text_splitter(documents:str,embeddings:OllamaEmbeddings):
+    
+    semantic_splitter = SemanticChunker(embeddings=embeddings,
                                         buffer_size=1,
                                         breakpoint_threshold_type="percentile",
                                         breakpoint_threshold_amount=95,
@@ -29,62 +30,49 @@ def text_splitter(documents:str,embed_model:str):
                                         )
     
     return semantic_splitter.split_documents(documents=documents)
-
-@st.cache_resource
-def load_embeddings(embed_model:str):
-    return HuggingFaceEmbeddings(model_name=embed_model)
-    
-
     
 @st.cache_resource
 def initiate_llm_pipeline(model_name:str):
-    nf4_config = BitsAndBytesConfig(
-        load_in_4bit=True,
-        bnb_4bit_quant_type="nf4",
-        bnb_4bit_use_double_quant=True,
-        bnb_4bit_compute_dtype=torch.bfloat16
-    )
+    return OllamaLLM(model=model_name)
 
-    model = AutoModelForCausalLM.from_pretrained(
-        model_name,
-        quantization_config=nf4_config,
-        low_cpu_mem_usage=True
-    )
+def process_pdf(embeddings,llm,uploaded_file=None):
+    if uploaded_file is not None:
+        # ---Load  và chung PDF mới---
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
+            tmp_file.write(uploaded_file.getvalue())
+            tmp_file_path = tmp_file.name
+        try:
+            documents = PyPDFLoader(tmp_file_path).load()
+        finally:
+            os.unlink(tmp_file_path)
+        
 
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
+        docs = text_splitter(documents, embeddings)
 
-    model_pipeline = pipelines(
-        "text-generation",
-        model=model,
-        tokenizer=tokenizer,
-        max_new_tokens=512,
-        pad_token_id=tokenizer.eos_token_id,
-        device_map="auto"
-    )
-
-    return HuggingFacePipeline(pipeline=model_pipeline)
-
-def process_pdf(embed_model,llm,uploaded_file=None):
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
-        tmp_file.write(uploaded_file.getvalue())
-        tmp_file_path = tmp_file.name
-    
-    loader = PyPDFLoader(tmp_file_path)
-    documents = loader.load
-
-    docs = text_splitter(documents, embed_model)
-
-    if docs:
-        vector_db =Chroma.from_documents(documents=docs,
-                                        embedding=embed_model,
-                                        persist_directory="./RAG",
-                                        )
-    
-    vector_db =Chroma.from_documents(
-                                        embedding=embed_model,
-                                        persist_directory="./RAG",
-                                        )
-    
+        if not docs:
+            raise ValueError("Cannot chunk PDF file")
+        
+        # add data into database (create new if it doesnot exit, append if db available)
+        vector_db =Chroma( collection_name="RAG",
+                        embedding_function=embeddings,
+                        persist_directory="./RAG"
+                        )
+        
+        vector_db.add_documents(docs) # 
+    else:
+        #--If upload file is none -> load exist db---                
+        if not os.path.exists("./RAG"):
+            raise FileNotFoundError("No Database available, please upload an PDF file first")
+        
+        vector_db =Chroma( collection_name="RAG",
+                        embedding_function=embeddings,
+                        persist_directory="./RAG"
+                        )
+        
+        if vector_db._collection.count() == 0:
+            raise ValueError("Database is empty, please upload PDF first")
+        
+    # Retrieve data
     retriever = vector_db.as_retriever()
 
     prompt = hub.pull("rlm/rag-prompt")

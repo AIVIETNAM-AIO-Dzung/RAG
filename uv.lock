@@ -1117,6 +1117,19 @@ wheels = [
 ]
 
 [[package]]
+name = "langchain-ollama"
+version = "0.3.10"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "langchain-core" },
+    { name = "ollama" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/73/c9/ff996fc5fa2d8d23136f07c56e88a1013fe1e03a35ef3e65899baa73c49e/langchain_ollama-0.3.10.tar.gz", hash = "sha256:5d942d331c44351bae5c5c5965603ceb20b0ee4d70082290f4b15bc638559756", size = 35771, upload-time = "2025-10-02T15:53:20.974Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/4b/f2/d87767a106021206fb53faf7ae4517d365d353dc29a1649b9f3e47eef940/langchain_ollama-0.3.10-py3-none-any.whl", hash = "sha256:7550792872e8f86d362568e9ceb0f8085428bc59946c7b44e726358ba4b280f9", size = 27646, upload-time = "2025-10-02T15:53:19.89Z" },
+]
+
+[[package]]
 name = "langchain-text-splitters"
 version = "0.3.11"
 source = { registry = "https://pypi.org/simple" }
@@ -1921,11 +1934,13 @@ dependencies = [
     { name = "langchain-community" },
     { name = "langchain-experimental" },
     { name = "langchain-huggingface" },
+    { name = "langchain-ollama" },
     { name = "langchainhub" },
     { name = "ollama" },
     { name = "pypdf" },
     { name = "python-dotenv" },
     { name = "streamlit" },
+    { name = "torch" },
     { name = "transformers" },
 ]
 
@@ -1939,11 +1954,13 @@ requires-dist = [
     { name = "langchain-community", specifier = "==0.3.24" },
     { name = "langchain-experimental", specifier = "==0.3.4" },
     { name = "langchain-huggingface", specifier = "==0.2.0" },
+    { name = "langchain-ollama", specifier = ">=0.3.10" },
     { name = "langchainhub", specifier = "==0.1.21" },
     { name = "ollama", specifier = ">=0.6.2" },
     { name = "pypdf", specifier = ">=6.14.2" },
     { name = "python-dotenv", specifier = "==1.1.0" },
     { name = "streamlit", specifier = ">=1.58.0" },
+    { name = "torch", specifier = ">=2.12.1" },
     { name = "transformers", specifier = "==4.52.4" },
 ]
 
