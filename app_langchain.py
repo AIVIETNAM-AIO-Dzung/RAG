@@ -16,9 +16,11 @@ if "embeddings" not in st.session_state:
     st.session_state.embeddings = None
 if "llm" not in st.session_state:
     st.session_state.llm = None
+if "pdf_name" not in st.session_state:
+    st.session_state.pdf_name = ""
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = [] 
 
-for k,v in {"collection":None, "pdf_name":"", "chat_history":[]}.items():
-    st.session_state.setdefault(k,v)
 
 st.set_page_config(page_title="PDF RAG Chatbot", layout="wide",initial_sidebar_state="expanded")
 st.title("PDF RAG Assistant")
@@ -37,10 +39,10 @@ with st.sidebar:
     f = st.file_uploader("Choose",type ="pdf")
     if f and st.button("🔄 Xử lý PDF",use_container_width=True):
         with st.spinner("Processing..."):
-            st.session_state.collection, n =  fu.process_pdf(f,EMBED_MODEL)
+            st.session_state.rag_chain,num_chunks =  lf.process_pdf(EMBED_MODEL,LLM_MODEL,f)  
             st.session_state.pdf_name = f.name
-            st.session_state.chat_history = []
-        st.success(f"✅ {n} chunks")
+            st.session_state.chat_history = []          
+        st.success(f"✅ {num_chunks} chunks")
     st.info(f"📄{st.session_state.pdf_name}" if st.session_state.pdf_name else "📄 Chưa có tài liệu")
     if st.button("🗑️ Xóa lịch sử chat", use_container_width=True):
         st.session_state.chat_history=[]
@@ -49,7 +51,7 @@ for m in st.session_state.chat_history:
     with st.chat_message(m["role"]):
         st.write(m["content"])
 
-if st.session_state.collection is None:
+if st.session_state.rag_chain is None:
     st.info("🔄 Upload và xử lý PDF trước khi chat.")
     st.chat_input("Input ypur question...",disabled=True)
 else:
@@ -60,7 +62,8 @@ else:
             st.write(q)
         with st.chat_message("assistant"):
             with st.spinner("Thinking..."):
-                ans = fu.rag(q,PROMPT,LLM_MODEL,st.session_state.collection,4)
+                output = st.session_state.rag_chain.invoke(q)
+                ans = output.split("Answer:")[1].strip() if "Answer:" in output else output.strip()
                 st.write(ans)
             st.session_state.chat_history.append({"role":"assistant", "content": ans})
 

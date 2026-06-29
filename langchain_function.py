@@ -64,7 +64,7 @@ def initiate_llm_pipeline(model_name:str):
 
     return HuggingFacePipeline(pipeline=model_pipeline)
 
-def process_pdf(uploaded_file, embed_model,llm):
+def process_pdf(embed_model,llm,uploaded_file=None):
     with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp_file:
         tmp_file.write(uploaded_file.getvalue())
         tmp_file_path = tmp_file.name
@@ -73,10 +73,18 @@ def process_pdf(uploaded_file, embed_model,llm):
     documents = loader.load
 
     docs = text_splitter(documents, embed_model)
-    vector_db =Chroma.from_documents(documents=docs,
-                                     embedding=embed_model,
-                                     persist_directory="./RAG",
-                                     )
+
+    if docs:
+        vector_db =Chroma.from_documents(documents=docs,
+                                        embedding=embed_model,
+                                        persist_directory="./RAG",
+                                        )
+    
+    vector_db =Chroma.from_documents(
+                                        embedding=embed_model,
+                                        persist_directory="./RAG",
+                                        )
+    
     retriever = vector_db.as_retriever()
 
     prompt = hub.pull("rlm/rag-prompt")
