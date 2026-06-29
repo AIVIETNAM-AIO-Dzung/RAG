@@ -4,7 +4,7 @@ import streamlit as st
 
 
 LLM_MODEL = "vicuna:7b-v1.5-q5_1"
-EMBED_MODEL = "sentence-transformers/qwen3-embedding:latest"
+EMBED_MODEL = "qwen3-embedding:latest"
 PROMPT = """
                 Bạn là trợ lý hỏi đáp. Dùng các đoạn ngữ cảnh dưới đây để trả lời câu hỏi.
                 Nếu ngữ cảnh không có thông tin, hãy nói là bạn không biết, đừng bịa.

@@ -41,7 +41,7 @@ with st.sidebar:
     f = st.file_uploader("Choose",type ="pdf")
     if f and st.button("🔄 Xử lý PDF",use_container_width=True):
         with st.spinner("Processing..."):
-            st.session_state.rag_chain,num_chunks =  lf.process_pdf(st.session_state.embeddings,LLM_MODEL,f)  
+            st.session_state.rag_chain,num_chunks =  lf.process_pdf(st.session_state.embeddings,st.session_state.llm,f)  
             st.session_state.pdf_name = f.name
             st.session_state.chat_history = []          
         st.success(f"✅ {num_chunks} chunks")

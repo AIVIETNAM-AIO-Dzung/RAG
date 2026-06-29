@@ -1,8 +1,4 @@
-import torch
-from transformers import BitsAndBytesConfig
-from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
 from langchain_ollama import OllamaEmbeddings, OllamaLLM
-from langchain_huggingface.llms import HuggingFacePipeline
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_experimental.text_splitter import SemanticChunker
 from langchain_chroma import Chroma
